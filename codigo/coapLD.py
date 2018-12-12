@@ -91,15 +91,15 @@ class coap:
 		self.quadro += bytes([self.code])
 		self.quadro += bytes([self.messageID])
 		self.quadro += bytes([self.optionsdelta + self.optionslength])
-		self.quadro += bytes([self.options])
+		self.quadro += self.options
 		self.quadro += bytes([self.acesscode])
 		self.quadro += bytes([self.payload])
 
 	def GET(self, uri_path, server_adress, port):
-		self.tipo = bytes([T.CONFIRMABLE.value])
-		self.code = bytes([CODE_0.GET.value])
-		self.optionsdelta = bytes([DELTA.URI_PATH.value])
-		self.optionslength = bytes([len(uri_path)])
+		self.tipo = T.CONFIRMABLE.value
+		self.code = CODE_0.GET.value
+		self.optionsdelta = DELTA.URI_PATH.value
+		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.QUADRO()
 		print(self.quadro)
@@ -110,9 +110,9 @@ class coap:
 		print(addr)
 
 	def POST(self, uri_path, server_adress, port):
-		self.tipo = T.CONFIRMABLE
-		self.code = CODE_0.POST
-		self.optionsdelta = DELTA.URI_PATH
+		self.tipo = T.CONFIRMABLE.value
+		self.code = CODE_0.POST.value
+		self.optionsdelta = DELTA.URI_PATH.value
 		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.payload = b'XABLAU'
@@ -125,9 +125,9 @@ class coap:
 		print(addr)
 
 	def PUT(self, uri_path, server_adress, port):
-		self.tipo = T.CONFIRMABLE
-		self.code = CODE_0.PUT
-		self.optionsdelta = DELTA.URI_PATH
+		self.tipo = T.CONFIRMABLE.value
+		self.code = CODE_0.PUT.value
+		self.optionsdelta = DELTA.URI_PATH.value
 		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.payload = b'XABLAU'
@@ -142,9 +142,9 @@ class coap:
 		
 
 	def DELETE(self, uri_path, server_adress, port):
-		self.tipo = T.CONFIRMABLE
-		self.code = CODE_0.DELETE
-		self.optionsdelta = DELTA.URI_PATH
+		self.tipo = T.CONFIRMABLE.value
+		self.code = CODE_0.DELETE.value
+		self.optionsdelta = DELTA.URI_PATH.value
 		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.QUADRO()
