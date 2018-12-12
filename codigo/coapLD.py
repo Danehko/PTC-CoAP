@@ -73,7 +73,8 @@ class coap:
 		self.tipo = int(0)
 		self.tkl = int(0) #  tkl é sempre 00000000.
 		self.code = int(0)
-		self.messageID = int(10285)
+		self.messageID1 = int(10)
+		self.messageID2 = int(48)
 		self.optionsdelta = int(0)
 		self.optionslength = int(0)
 		self.options = int(0) # campo de valor variavel.
@@ -89,11 +90,12 @@ class coap:
 		#self.quadro += (bytes([self.versao + self.tipo + self.tkl]))
 		self.quadro += bytes([self.versao + self.tipo + self.tkl])
 		self.quadro += bytes([self.code])
-		self.quadro += bytes([self.messageID])
+		self.quadro += bytes([self.messageID1])
+		self.quadro += bytes([self.messageID2])
 		self.quadro += bytes([self.optionsdelta + self.optionslength])
 		self.quadro += self.options
 		self.quadro += bytes([self.acesscode])
-		self.quadro += bytes([self.payload])
+		self.quadro += self.payload
 
 	def GET(self, uri_path, server_adress, port):
 		self.tipo = T.CONFIRMABLE.value
@@ -138,8 +140,6 @@ class coap:
 		data, addr = self.sock.recvfrom(1024)
 		print(data)
 		print(addr)
-
-		
 
 	def DELETE(self, uri_path, server_adress, port):
 		self.tipo = T.CONFIRMABLE.value
