@@ -71,14 +71,14 @@ class coap:
 	def __init__(self):
 		self.versao = int(64) # sempre 01000000
 		self.tipo = int(0)
-		self.tkl = int(4) #  tkl é sempre 00000000.
+		self.tkl = int(0) #  tkl é sempre 00000000.
 		self.code = int(0)
 		self.messageID1 = int(10)
 		self.messageID2 = int(48)
 		self.optionsdelta = int(0)
 		self.optionslength = int(0)
 		self.options = int(0) # campo de valor variavel.
-		#self.acesscode = int(255) # playload_mac e sempre ff.
+		self.acesscode = int(255) # playload_mac e sempre ff.
 		self.payload = b''
 		self.quadro = b''
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -94,7 +94,7 @@ class coap:
 		self.quadro += bytes([self.messageID2])
 		self.quadro += bytes([self.optionsdelta + self.optionslength])
 		self.quadro += self.options
-		#self.quadro += bytes([self.acesscode])
+		self.quadro += bytes([self.acesscode])
 		self.quadro += self.payload
 
 	def GET(self, uri_path, server_adress, port):
