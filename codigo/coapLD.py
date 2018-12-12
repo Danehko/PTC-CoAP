@@ -69,8 +69,8 @@ class DELTA(Enum):
 class coap:
 
 	def __init__(self):
-		self.v = int(64) # sempre 01000000
-		self.t = int(0)
+		self.versao = int(64) # sempre 01000000
+		self.tipo = int(0)
 		self.tkl = int(0) #  tkl é sempre 00000000.
 		self.code = int(0)
 		self.messageID = int(10285)
@@ -86,22 +86,22 @@ class coap:
 
 	def QUADRO(self):
 		self.quadro = b''
-		self.quadro += (bytes([self.versao + self.tipo + self.tkl]))
-		self.quadro += (bytes([self.versao + self.tipo + self.tkl]))
-		self.quadro += (bytes([self.code.value]))
-		self.quadro += (bytes([self.messageID]))
-		self.quadro += (bytes([self.optionsdelta + self.optionslength])) 
-		self.quadro += (bytes([self.options]))
-		self.quadro += (bytes([self.acesscode]))
-		self.quadro += (bytes([self.payload]))
+		#self.quadro += (bytes([self.versao + self.tipo + self.tkl]))
+		self.quadro += bytes([self.versao + self.tipo + self.tkl])
+		self.quadro += bytes([self.code])
+		self.quadro += bytes([self.messageID])
+		self.quadro += bytes([self.optionsdelta + self.optionslength])
+		self.quadro += bytes([self.options])
+		self.quadro += bytes([self.acesscode])
+		self.quadro += bytes([self.payload])
 
 	def GET(self, uri_path, server_adress, port):
-		self.t = T.CONFIRMABLE
-		self.code = CODE_0.GET
-		self.optionsdelta = DELTA.URI_PATH
-		self.optionslength = len(uri_path)
+		self.tipo = bytes([T.CONFIRMABLE.value])
+		self.code = bytes([CODE_0.GET.value])
+		self.optionsdelta = bytes([DELTA.URI_PATH.value])
+		self.optionslength = bytes([len(uri_path)])
 		self.options = uri_path
-		QUADRO(self)
+		self.QUADRO()
 		print(self.quadro)
 
 		self.sock.sendto(self.quadro, (server_adress, port))
@@ -110,13 +110,13 @@ class coap:
 		print(addr)
 
 	def POST(self, uri_path, server_adress, port):
-		self.t = T.CONFIRMABLE
+		self.tipo = T.CONFIRMABLE
 		self.code = CODE_0.POST
 		self.optionsdelta = DELTA.URI_PATH
 		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.payload = b'XABLAU'
-		QUADRO(self)
+		self.QUADRO()
 		print(self.quadro)
 
 		self.sock.sendto(self.quadro, (server_adress, port))
@@ -125,13 +125,13 @@ class coap:
 		print(addr)
 
 	def PUT(self, uri_path, server_adress, port):
-		self.t = T.CONFIRMABLE
+		self.tipo = T.CONFIRMABLE
 		self.code = CODE_0.PUT
 		self.optionsdelta = DELTA.URI_PATH
 		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.payload = b'XABLAU'
-		QUADRO(self)
+		self.QUADRO()
 		print(self.quadro)
 
 		self.sock.sendto(self.quadro, (server_adress, port))
@@ -142,16 +142,15 @@ class coap:
 		
 
 	def DELETE(self, uri_path, server_adress, port):
-		self.t = T.CONFIRMABLE
+		self.tipo = T.CONFIRMABLE
 		self.code = CODE_0.DELETE
 		self.optionsdelta = DELTA.URI_PATH
 		self.optionslength = len(uri_path)
 		self.options = uri_path
-		QUADRO(self)
+		self.QUADRO()
 		print(self.quadro)
 
 		self.sock.sendto(self.quadro, (server_adress, port))
 		data, addr = self.sock.recvfrom(1024)
 		print(data)
 		print(addr)
-
