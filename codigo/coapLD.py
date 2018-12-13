@@ -10,98 +10,89 @@ import socket
 from enum import Enum
 
 class T(Enum):
-	CONFIRMABLE = int(0)
-	NONCONFIRMABLE = int(16)
-	ACK = int(32)
-	RESET = int(64)
+	CONFIRMABLE = b'\x00'       #00 00 0000
+	NONCONFIRMABLE = b'\x01'   #00 01 0000
+	ACK = b'\x02'              #00 10 0000
+	RESET = b'\x03'            #00 11 0000
 
-class CODE_0(Enum):
-	EMPTY_MSG = int(0)
-	GET = int(1)
-	POST = int(2)
-	PUT = int(3)
-	DELETE = int(4)
+class CODE_0(Enum): #requisição
+	EMPTY_MSG = b'\x00'
+	GET = b'\x01'
+	POST = b'\x02'
+	PUT = b'\x03'
+	DELETE = b'\x04'
 
-class CODE_2(Enum):
-	CREATED = int(65)
-	DELETED = int(66)
-	VALID = int(67)
-	CHANGED = int(68)
-	CONTENT = int(69)
+class CODE_2(Enum): #
+	CREATED = b'\x41' # 0100 0001 - 65  
+	DELETED = b'\x42' # 0100 0010 - 66
+	VALID = b'\x43'   # 0100 0011 - 67 
+	CHANGED = b'\x44' # 0100 0100 - 67
+	CONTENT = b'\x45' # 0100 0101 - 69
 
 class CODE_4(Enum):
-	BADREQUEST = int(128)
-	UNAUTHORIZED = int(129)
-	BADOPTION = int(130)
-	FORBIDDEN = int(131)
-	NOTFOUND = int(132)
-	METHODNOTALLOWED = int(133)
-	NOTACCEPTABLE = int(134)
-	PRECONDITIONFAILED = int(140)
-	REQUESTENTITYTOOLARGE = int(141)
-	UNSUPPORTEDFORMAT = int(143)
-
+	BADREQUEST = b'\x80' # 1000 0000
+	UNAUTHORIZED = b'\x81' # 1000 0001
+	BADOPTION = b'\x82' # 1000 0010
+	FORBIDDEN = b'\x83' # 1000 0011
+	NOTFOUND = b'\x84' #  1000 0100
+	METHODNOTALLOWED = b'\x85' # 1000 0101
+	NOTACCEPTABLE = b'\x86' # 1000 0110
+	PRECONDITIONFAILED = b'\x8C' # 1000 1101
+	REQUESTENTITYTOOLARGE = b'\x8D' # 1000 1110
+	UNSUPPORTEDFORMAT = b'\x8F' # 1000 1111
+	
 class CODE_5(Enum):
-	INTERNALSERVERFAILED = int(192)
-	NOTIMPLEMENT = int(193)
-	BADGATEWAY = int(194)
-	SERVICEUNAVAILABLE = int(195)
-	GATEWAYTIMEOUT = int(196)
-	PROXYINGNOTSUPPORTED = int(197)
+	INTERNALSERVERFAILED = b'\xA0' #
+	NOTIMPLEMENT = b'\xA1' #
+	BADGATEWAY = b'\xA2' #
+	SERVICEUNAVAILABLE = b'\xA3' #
+	GATEWAYTIMEOUT = b'\xA4' #
+	PROXYINGNOTSUPPORTED = b'\xA5' #
 
 class DELTA(Enum):
-	IFMATCH = int(16) #0001 0000
-	URI_HOST = int(48) #0011 0000
-	ETAG = int(64) #0100 0000
-	IF_NONE_MATCH = int(80) # 0101 0000
-	URI_PORT = int(112)#0111
-	LOCATION_PATH = int(128)
-	URI_PATH = int(176)#1011 0000
-	CONTENT_FORMAT = int(192)#1100 0000
-	MAX_AGE = int(224)#1110 0000
-	URI_QUERY = int(240) 
-	#arrumar
-	ACCEPT = int(17)
-	LOCATION_QUERY = int(20)
-	PROXY_URI = int(35)
-	PROXY_SCHEME = int(39)
-	SIZE1 = int(60)
-
+	IF_MATC =  b'\x01'
+	URI_HOST =  b'\x03'
+	ETAG =  b'\x04'
+	IF_NONE_MATCH =  b'\x05'
+	URI_PORT =  b'\x07'
+	LOCATION_PATH =  b'\x08'
+	URI_PATH =  b'\x0B'
+	CONTENT_FORMAT =  b'\x0C'
+	MAX_AGE =  b'\x0E'
+	URI_QUERY =  b'\x0F'
+	ACCEPT =  b'\x11'
+	LOCATION_QUERY =  b'\x14'
+	PROXY_URI =  b'\x23'
+	PROXY_SCHEME =  b'\x27'
+	SIZE1 = B'\x3C'
+	
 class coap:
 
 	def __init__(self):
-		self.versao = int(64) # sempre 01000000
-		self.tipo = int(0)
-		self.tkl = int(0) #  tkl é sempre 00000000.
-		self.code = int(0)
-		self.messageID1 = int(35)
-		self.messageID2 = int(89)
-		self.optionsdelta = int(48)
-		self.optionslength = int(0)
-		self.options = int(0) # campo de valor variavel.
-		#self.acesscode = int(255) # playload_mac e sempre ff.
+		self.versao = b'\x01'
+		self.tipo = b'\00'
+		self.tkl = b'\x00' #  tkl é sempre 00000000.
+		self.code = b'\x00'
+		self.messageID1 = b'\x35'
+		self.messageID2 = b'\x89'
+		self.optionsdelta = b'\x00'
+		self.optionslength = b'\x00'
+		self.options = b'\x00' # campo de valor variavel.
+		self.acesscode = b'\xff' # playload_mac e sempre ff.
 		self.payload = b''
 		self.quadro = b''
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		#self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		#self.sock.bind((socket.gethostname(), 5555))
-
+		
 	def QUADRO(self):
 		self.quadro = b''
-		#self.quadro += (bytes([self.versao + self.tipo + self.tkl]))
-		self.quadro += bytes([self.versao + self.tipo + self.tkl])
-		print(self.quadro)
-		self.quadro += bytes([self.code])
-		print(self.quadro)
-		self.quadro += bytes([self.messageID1])
-		print(self.quadro)
-		self.quadro += bytes([self.messageID2])
-		print(self.quadro)
-		self.quadro += bytes([self.optionsdelta + self.optionslength])
-		print(self.quadro)
+		self.quadro += ((self.v[0] << 6) | (self.tipo[0] << 4) | (self.tkl[0])).to_bytes(1, byteorder='big')
+		self.quadro += self.code
+		self.quadro += self.messageID1
+		self.quadro += self.messageID2
+		self.quadro += ((self.opcao_delta << 4) | (self.optionsdelta)) 
 		self.quadro += self.options
-		print(self.quadro)
-		#self.quadro += bytes([self.acesscode])
+		if ((self.code  == CODE_0.POST.value) or (self.code  == CODE_0.PUT.value))
+		  self.quadro += bytes([self.acesscode])
 		self.quadro += self.payload
 		print(self.quadro)
 
