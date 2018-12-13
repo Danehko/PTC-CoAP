@@ -50,16 +50,17 @@ class CODE_5(Enum):
 	PROXYINGNOTSUPPORTED = int(197)
 
 class DELTA(Enum):
-	IFMATCH = int(1)
-	URI_HOST = int(3)
-	ETAG = int(4)
-	IF_NONE_MATCH = int(5)
-	URI_PORT = int(7)
-	LOCATION_PATH = int(8)
-	URI_PATH = int(11)
-	CONTENT_FORMAT = int(12)
-	MAX_AGE = int(14)
-	URI_QUERY = int(15)
+	IFMATCH = int(16) #0001 0000
+	URI_HOST = int(48) #0011 0000
+	ETAG = int(64) #0100 0000
+	IF_NONE_MATCH = int(80) # 0101 0000
+	URI_PORT = int(112)#0111
+	LOCATION_PATH = int(128)
+	URI_PATH = int(176)#1011 0000
+	CONTENT_FORMAT = int(192)#1100 0000
+	MAX_AGE = int(224)#1110 0000
+	URI_QUERY = int(240) 
+	#arrumar
 	ACCEPT = int(17)
 	LOCATION_QUERY = int(20)
 	PROXY_URI = int(35)
@@ -71,11 +72,11 @@ class coap:
 	def __init__(self):
 		self.versao = int(64) # sempre 01000000
 		self.tipo = int(0)
-		self.tkl = int(4) #  tkl é sempre 00000000.
+		self.tkl = int(0) #  tkl é sempre 00000000.
 		self.code = int(0)
-		self.messageID1 = int(10)
-		self.messageID2 = int(48)
-		self.optionsdelta = int(0)
+		self.messageID1 = int(35)
+		self.messageID2 = int(89)
+		self.optionsdelta = int(48)
 		self.optionslength = int(0)
 		self.options = int(0) # campo de valor variavel.
 		#self.acesscode = int(255) # playload_mac e sempre ff.
@@ -89,18 +90,25 @@ class coap:
 		self.quadro = b''
 		#self.quadro += (bytes([self.versao + self.tipo + self.tkl]))
 		self.quadro += bytes([self.versao + self.tipo + self.tkl])
+		print(self.quadro)
 		self.quadro += bytes([self.code])
+		print(self.quadro)
 		self.quadro += bytes([self.messageID1])
+		print(self.quadro)
 		self.quadro += bytes([self.messageID2])
+		print(self.quadro)
 		self.quadro += bytes([self.optionsdelta + self.optionslength])
+		print(self.quadro)
 		self.quadro += self.options
+		print(self.quadro)
 		#self.quadro += bytes([self.acesscode])
 		self.quadro += self.payload
+		print(self.quadro)
 
 	def GET(self, uri_path, server_adress, port):
 		self.tipo = T.CONFIRMABLE.value
 		self.code = CODE_0.GET.value
-		self.optionsdelta = DELTA.URI_PATH.value
+		self.optionsdelta = DELTA.URI_HOST.value
 		self.optionslength = len(uri_path)
 		self.options = uri_path
 		self.QUADRO()
