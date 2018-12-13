@@ -85,13 +85,19 @@ class coap:
 		
 	def QUADRO(self):
 		self.quadro = b''
-		self.quadro += ((self.v[0] << 6) | (self.tipo[0] << 4) | (self.tkl[0])).to_bytes(1, byteorder='big')
+		self.quadro += ((self.versao[0] << 6) | (self.tipo[0] << 4) | (self.tkl[0])).to_bytes(1, byteorder='big')
+		print(self.quadro)
 		self.quadro += self.code
+		print(self.quadro)
 		self.quadro += self.messageID1
+		print(self.quadro)
 		self.quadro += self.messageID2
-		self.quadro += ((self.opcao_delta << 4) | (self.optionsdelta)) 
+		print(self.quadro)
+		self.quadro += ((self.optionsdelta[0] << 4) | (self.optionslength)).to_bytes(1, byteorder='big')
+		print(self.quadro)
 		self.quadro += self.options
-		if ((self.code  == CODE_0.POST.value) or (self.code  == CODE_0.PUT.value))
+		print(self.quadro)
+		if ((self.code  == CODE_0.POST.value) or (self.code  == CODE_0.PUT.value)):
 		  self.quadro += bytes([self.acesscode])
 		self.quadro += self.payload
 		print(self.quadro)
@@ -102,8 +108,8 @@ class coap:
 		self.optionsdelta = DELTA.URI_HOST.value
 		self.optionslength = len(uri_path)
 		self.options = uri_path
+		self.payload = b''
 		self.QUADRO()
-		print(self.quadro)
 
 		self.sock.sendto(self.quadro, (server_adress, port))
 		data, addr = self.sock.recvfrom(1024)
