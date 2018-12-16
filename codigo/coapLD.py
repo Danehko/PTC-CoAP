@@ -238,7 +238,7 @@ class coap:
         self.frame += (self.optionsdelta << 4 | self.optionslength).to_bytes(1, byteorder='big')
         self.frame += str.encode(uri_path)
       if ((self.code  == CODE_REQUEST.POST.value) or (self.code  == CODE_REQUEST.PUT.value)):
-        self.frame += bytes([self.acesscode])
+        self.frame += bytes(self.acesscode)
         self.frame += self.payload
       return
 
