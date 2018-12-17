@@ -17,7 +17,7 @@ class TYPE(Enum):
   ACK = b'\x02'              #00 10 0000
   RESET = b'\x03'            #00 11 0000
 
-# codigo de requisição
+# código de requisição
 class CODE_REQUEST(Enum):
   EMPTY_MSG = b'\x00'
   GET = b'\x01'
@@ -25,7 +25,7 @@ class CODE_REQUEST(Enum):
   PUT = b'\x03'
   DELETE = b'\x04'
 
-# codigo de resposta sucesso
+# código de resposta sucesso
 class CODE_SUCCESS(Enum):
   CREATED = b'\x41' # 0100 0001 - 65  
   DELETED = b'\x42' # 0100 0010 - 66
@@ -33,7 +33,7 @@ class CODE_SUCCESS(Enum):
   CHANGED = b'\x44' # 0100 0100 - 67
   CONTENT = b'\x45' # 0100 0101 - 69
 
-# codigo de erro de cliente
+# código de erro de cliente
 class CODE_CLIENT_ERROR(Enum):
   BAD_REQUEST = b'\x80'                 # 1000 0000
   UNAUTHORIZED = b'\x81'                # 1000 0001
@@ -46,58 +46,69 @@ class CODE_CLIENT_ERROR(Enum):
   REQUEST_ENTITY_TOO_LARGE = b'\x8D'    # 1000 1110
   UNSUPPORTED_CONTENT_FORMAT = b'\x8F'  # 1000 1111
 
-# codigo de erro de servidor
+# código de erro de servidor
 class CODE_SERVER_ERROR(Enum):
-  INTERNAL_SERVER_FAILED = b'\xA0' #
-  NOT_IMPLEMENT = b'\xA1' #
-  BAD_GATEWAY = b'\xA2' #
-  SERVICE_UNAVAILABLE = b'\xA3' #
-  GATEWAY_TIMEOUT = b'\xA4' #
-  PROXYING_NOT_SUPPORTED = b'\xA5' #
+  INTERNAL_SERVER_FAILED = b'\xA0'
+  NOT_IMPLEMENT = b'\xA1'
+  BAD_GATEWAY = b'\xA2'
+  SERVICE_UNAVAILABLE = b'\xA3'
+  GATEWAY_TIMEOUT = b'\xA4'
+  PROXYING_NOT_SUPPORTED = b'\xA5'
 
 # opção delta
 class OPTIONS_DELTA(Enum):
-  IF_MATC =  b'\x01'
-  URI_HOST =  b'\x03'
-  ETAG =  b'\x04'
-  IF_NONE_MATCH =  b'\x05'
-  URI_PORT =  b'\x07'
-  LOCATION_PATH =  b'\x08'
-  URI_PATH =  b'\x0B'
-  CONTENT_FORMAT =  b'\x0C'
-  MAX_AGE =  b'\x0E'
-  URI_QUERY =  b'\x0F'
-  ACCEPT =  b'\x11'
-  LOCATION_QUERY =  b'\x14'
-  PROXY_URI =  b'\x23'
-  PROXY_SCHEME =  b'\x27'
+  IF_MATC = b'\x01'
+  URI_HOST = b'\x03'
+  ETAG = b'\x04'
+  IF_NONE_MATCH = b'\x05'
+  URI_PORT = b'\x07'
+  LOCATION_PATH = b'\x08'
+  URI_PATH = b'\x0B'
+  CONTENT_FORMAT = b'\x0C'
+  MAX_AGE = b'\x0E'
+  URI_QUERY = b'\x0F'
+  ACCEPT = b'\x11'
+  LOCATION_QUERY = b'\x14'
+  PROXY_URI = b'\x23'
+  PROXY_SCHEME = b'\x27'
   SIZE1 = b'\x3C'
 	
 class coap:
 
   def __init__(self):
-    # padrão 01, só existe uma versao de coap
-    self.version = b'\x01' 
+    # valor padrão: 01
+    # só existe uma versão de CoAP
+    self.version = b'\x01'
+    # tipo de mensagem
     self.type = b'\00'
-    # token length é sempre 00000000
-    self.tkl = b'\x00' 
-    self.token = b'' 
-    # codigo
+    # nesse projeto token length é sempre 00000000
+    self.tkl = b'\x00'
+    # usado para transmissão multi ponto
+    self.token = b''
+    # código
     self.code = b'\x00'
-    # messagem id usado para detectar duplicatas e para confiabilidade opcional
+    # messagem ID usado para detectar duplicatas e para confiabilidade opcional
     self.messageIDmsb = b'\x35'
     self.messageIDlsb = b'\x89' 
     self.optionsdelta = b'\x00'
+    self.optionsdeltaold = int(0)
     self.optionslength = b'\x00'
-    # campo de valor variavel
+    # campo de valor variável
     self.options = b'\x00' 
-    # acesscode e sempre \xFF
-    self.acesscode = b'\xff' 
+    # delimitador de quadro início de payload (PUT e POST)
+    # accesscode e sempre \xFF
+    self.accesscode = b'\xff'
+    # dado
     self.payload = b''
+    # pacote pronto para envio
     self.frame = b''
+    # método de envio
     self.method = 'direct'
+    # IP ou DNS
     self.path = ''
+    # porta
     self.port = int(5683)
+    # socket UDP
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	
 
@@ -139,14 +150,18 @@ class coap:
     print(answer)
 
 
-  def POST(self, resource, inp):
+  def POST(self, resource, server_adress='', port=int(5683), inp=''):
     self.type = TYPE.CONFIRMABLE.value
     self.code = CODE_REQUEST.POST.value
     self.payload = inp.encode()
-    self.port = int(5683)
     self.method = 'direct'
+
+    if server_adress != '':
+      self.path = server_adress
+      self.port = port
+      self.method = 'not_direct'
+      
     self.generateFrame(resource)
-    
     self.sock.sendto(self.frame, (self.path, self.port))
     data, addr = self.sock.recvfrom(1024)
 
@@ -154,46 +169,19 @@ class coap:
     print(answer)
 
 
-  def POST(self, resource, server_adress, port, inp):
-    self.type = TYPE.CONFIRMABLE.value
-    self.code = CODE_REQUEST.POST.value
-    self.payload = inp.encode()
-    self.path = server_adress
-    self.port = port
-    self.method = 'not_direct'
-    self.generateFrame(resource)
-
-    self.sock.sendto(self.frame, (self.path, self.port))
-    data, addr = self.sock.recvfrom(1024)
-
-    answer = self.receive(data)
-    print(answer)
-
-
-  def PUT(self, resource, inp):
+  def PUT(self, resource, server_adress='', port=int(5683), inp=''):
+    print(inp)
     self.type = TYPE.CONFIRMABLE.value
     self.code = CODE_REQUEST.PUT.value
     self.payload = inp.encode()
-    self.port = int(5683)
     self.method = 'direct'
-    self.generateFrame(resource)
 
-    self.sock.sendto(self.frame, (self.path, self.port))
-    data, addr = self.sock.recvfrom(1024)
-
-    answer = self.receive(data)
-    print(answer)
-
-
-  def PUT(self, resource, server_adress, port, inp):
-    self.type = TYPE.CONFIRMABLE.value
-    self.code = CODE_REQUEST.PUT.value
-    self.payload = inp.encode()
-    self.path = server_adress
-    self.port = port
-    self.method = 'not_direct'
-    self.generateFrame(resource)
-    
+    if server_adress != '':
+      self.path = server_adress
+      self.port = port
+      self.method = 'not_direct'
+      
+    self.generateFrame(resource)    
     self.sock.sendto(self.frame, (self.path, self.port))
     data, addr = self.sock.recvfrom(1024)
 
@@ -210,12 +198,13 @@ class coap:
     if(self.method == 'not_direct'):
       resource_list = resource.split('/')
       for uri_path in resource_list:
-        self.optionsdelta = OPTIONS_DELTA.URI_PATH.value[0] - self.optionsdelta
+        self.optionsdelta = OPTIONS_DELTA.URI_PATH.value[0] - self.optionsdeltaold
+        self.optionsdeltaold = OPTIONS_DELTA.URI_PATH.value[0]
         self.optionslength = len(uri_path)
         self.frame += (self.optionsdelta << 4 | self.optionslength).to_bytes(1, byteorder='big')
         self.frame += str.encode(uri_path)
       if ((self.code  == CODE_REQUEST.POST.value) or (self.code  == CODE_REQUEST.PUT.value)):
-        self.frame += bytes(self.acesscode)
+        self.frame += bytes(self.accesscode)
         self.frame += self.payload
       return
     elif(self.method == 'direct'):
@@ -228,17 +217,19 @@ class coap:
         self.port = int(addr[1])
       addr = addr[0].split('.')
       if (not(len(addr)==4 and addr[0].isnumeric and addr[1].isnumeric and addr[2].isnumeric and addr[3].isnumeric)):
-        self.optionsdelta = OPTIONS_DELTA.URI_HOST.value[0] - self.optionsdelta
+        self.optionsdelta = OPTIONS_DELTA.URI_HOST.value[0] - self.optionsdeltaold
+        self.optionsdeltaold = OPTIONS_DELTA.URI_HOST.value[0]
         self.frame += (self.optionsdelta << 4 | self.optionslength).to_bytes(1, byteorder='big')
-        self.frame += str.encode(addr)
+        self.frame += str.encode(addr[0])
       resource_list = parameters[1:]
       for uri_path in resource_list:
-        self.optionsdelta = OPTIONS_DELTA.URI_PATH.value[0] - self.optionsdelta
+        self.optionsdelta = OPTIONS_DELTA.URI_PATH.value[0] - self.optionsdeltaold
+        self.optionsdeltaold = OPTIONS_DELTA.URI_PATH.value[0]
         self.optionslength = len(uri_path)
         self.frame += (self.optionsdelta << 4 | self.optionslength).to_bytes(1, byteorder='big')
         self.frame += str.encode(uri_path)
       if ((self.code  == CODE_REQUEST.POST.value) or (self.code  == CODE_REQUEST.PUT.value)):
-        self.frame += bytes(self.acesscode)
+        self.frame += bytes(self.accesscode)
         self.frame += self.payload
       return
 
@@ -256,7 +247,7 @@ class coap:
         if (code_rec >= 128 and code_rec <= 165):
           return self.error(code_rec)
         elif (code_rec >= 65 and code_rec <= 69):
-          return self.success()
+          return self.success(code_rec, receivedFrame, tkl_rec)
         return 'Código desconhecido'
       return 'Tipo não esperado'
     return 'Versão inexistente'
@@ -275,16 +266,21 @@ class coap:
       while (True):
         op_delta_length = receivedFrame[0]
         receivedFrame = receivedFrame[1:]
-        op_delta = op_delta_length & ((2 ** 7) + (2 ** 6) + (2 ** 5) + (2 ** 4))
-        op_length = op_delta_length & ((2 ** 3) + (2 ** 2) + (2 ** 1) + (2 ** 0))
+        op_delta = op_delta_length & 240
         op_delta = op_delta >> 4
-
+        op_length = op_delta_length & 15
+        
         if (op_delta < 13):
           if (op_length == 13):
             op_length = receivedFrame[0]
+            op_length = ord(op_length) + 13
+            option = receivedFrame[0:op_length]
             receivedFrame = receivedFrame[1:]
           elif (op_length == 14):
             op_length = receivedFrame[0:2]
+            print(int.from_bytes(op_length, byteorder='big'))
+            op_length = int.from_bytes(op_length, byteorder='big') + 269
+            option = receivedFrame[0:op_length]
             receivedFrame = receivedFrame[2:]
           elif (op_length == 15):
             return ('ERRO')
@@ -295,10 +291,44 @@ class coap:
         elif (op_delta == 13):
           op_delta = receivedFrame[0]
           receivedFrame = receivedFrame[1:]
+          
+          if (op_length == 13):
+            op_length = receivedFrame[0]
+            op_length = ord(op_length) + 13
+            option = receivedFrame[0:op_length]
+            receivedFrame = receivedFrame[1:]
+          elif (op_length == 14):
+            op_length = receivedFrame[0:2]
+            print(int.from_bytes(op_length, byteorder='big'))
+            op_length = int.from_bytes(op_length, byteorder='big') + 269
+            option = receivedFrame[0:op_length]
+            receivedFrame = receivedFrame[2:]
+          elif (op_length == 15):
+            return ('ERRO')
+          else:
+            option = receivedFrame[0:op_length]
+            receivedFrame = receivedFrame[op_length:]
 
         elif (op_delta == 14):
           op_delta = receivedFrame[0:2]
           receivedFrame = receivedFrame[2:]
+          
+          if (op_length == 13):
+            op_length = receivedFrame[0]
+            op_length = ord(op_length) + 13
+            option = receivedFrame[0:op_length]
+            receivedFrame = receivedFrame[1:]
+          elif (op_length == 14):
+            op_length = receivedFrame[0:2]
+            print(int.from_bytes(op_length, byteorder='big'))
+            op_length = int.from_bytes(op_length, byteorder='big') + 269
+            option = receivedFrame[0:op_length]
+            receivedFrame = receivedFrame[2:]
+          elif (op_length == 15):
+            return ('ERRO')
+          else:
+            option = receivedFrame[0:op_length]
+            receivedFrame = receivedFrame[op_length:]
 
         elif (op_delta == 15):
           if (op_length != 15):
