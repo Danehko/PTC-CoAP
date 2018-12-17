@@ -83,8 +83,8 @@ class coap:
     self.type = b'\00'
     # nesse projeto token length é sempre 00000000
     self.tkl = b'\x00'
-    # usado para transmissão multi ponto
-    self.token = b''
+    # usado para transmissão multiponto
+    self.token = ''
     # código
     self.code = b'\x00'
     # messagem ID usado para detectar duplicatas e para confiabilidade opcional
@@ -110,13 +110,19 @@ class coap:
     self.port = int(5683)
     # socket UDP
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.auxiliar = b''
+    self.list = dict()
 	
 
-  def GET(self, resource, server_adress='', port=int(5683)):
+  def GET(self, resource, server_adress='', port=int(5683), token=''):
     self.type = TYPE.CONFIRMABLE.value
     self.code = CODE_REQUEST.GET.value
     self.payload = b''
     self.method = 'direct'
+    self.token = token.encode()
+    self.tkl = len(token).to_bytes(1, byteorder='big')
+    if len(token) > 8:
+      return 'ERRO'
     
     if server_adress != '':
       self.path = server_adress
@@ -128,7 +134,7 @@ class coap:
     data, addr = self.sock.recvfrom(1024)
 
     answer = self.receive(data)
-    print(answer)
+    return answer, self.list
 
 
   def DELETE(self, resource, server_adress='', port=int(5683)):
@@ -147,7 +153,7 @@ class coap:
     data, addr = self.sock.recvfrom(1024)
 
     answer = self.receive(data)
-    print(answer)
+    return answer
 
 
   def POST(self, resource, server_adress='', port=int(5683), inp=''):
@@ -166,15 +172,15 @@ class coap:
     data, addr = self.sock.recvfrom(1024)
 
     answer = self.receive(data)
-    print(answer)
+    return answer
 
 
   def PUT(self, resource, server_adress='', port=int(5683), inp=''):
-    print(inp)
     self.type = TYPE.CONFIRMABLE.value
     self.code = CODE_REQUEST.PUT.value
     self.payload = inp.encode()
     self.method = 'direct'
+    self.token = ''.encode()
 
     if server_adress != '':
       self.path = server_adress
@@ -186,7 +192,7 @@ class coap:
     data, addr = self.sock.recvfrom(1024)
 
     answer = self.receive(data)
-    print(answer)
+    return answer
 
 
   def generateFrame(self, resource):
@@ -195,6 +201,7 @@ class coap:
     self.frame += self.code
     self.frame += self.messageIDmsb
     self.frame += self.messageIDlsb
+    self.frame += self.token
     if(self.method == 'not_direct'):
       resource_list = resource.split('/')
       for uri_path in resource_list:
@@ -235,19 +242,26 @@ class coap:
 
 
   def receive(self, receivedFrame):
+    self.list = dict()
+    self.list['options_value'] = []
     first_byte = receivedFrame[0]
     version_rec = first_byte & ((2 ** 7) + (2 ** 6))
     type_rec = first_byte & ((2 ** 5) + (2 ** 4))
     tkl_rec = first_byte & ((2 ** 3) + (2 ** 2) + (2 ** 1) + (2 ** 0))
     receivedFrame = receivedFrame[1:]
+
     if (version_rec == (2 ** 6)):
+
       if (type_rec == (2 ** 5)):
         code_rec = receivedFrame[0]
         receivedFrame = receivedFrame[1:]
+
         if (code_rec >= 128 and code_rec <= 165):
           return self.error(code_rec)
+
         elif (code_rec >= 65 and code_rec <= 69):
           return self.success(code_rec, receivedFrame, tkl_rec)
+
         return 'Código desconhecido'
       return 'Tipo não esperado'
     return 'Versão inexistente'
@@ -259,96 +273,81 @@ class coap:
     messageID = b''
     messageID += self.messageIDmsb
     messageID += self.messageIDlsb
+    op_delta_old = 0
+    op_descriptor = 0
 
     if (messageID_rec == messageID):
-      receivedFrame = receivedFrame[tkl_rec:]
+      token_rec = receivedFrame[0:tkl_rec]
 
-      while (True):
-        op_delta_length = receivedFrame[0]
-        receivedFrame = receivedFrame[1:]
-        op_delta = op_delta_length & 240
-        op_delta = op_delta >> 4
-        op_length = op_delta_length & 15
-        
-        if (op_delta < 13):
-          if (op_length == 13):
-            op_length = receivedFrame[0]
-            op_length = ord(op_length) + 13
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[1:]
-          elif (op_length == 14):
-            op_length = receivedFrame[0:2]
-            print(int.from_bytes(op_length, byteorder='big'))
-            op_length = int.from_bytes(op_length, byteorder='big') + 269
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[2:]
-          elif (op_length == 15):
-            return ('ERRO')
-          else:
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[op_length:]
+      if token_rec == self.token:
+        receivedFrame = receivedFrame[tkl_rec:]
 
-        elif (op_delta == 13):
-          op_delta = receivedFrame[0]
+        while (True):
+          op_delta_length = receivedFrame[0]
           receivedFrame = receivedFrame[1:]
+          op_delta = op_delta_length & 240
+          op_delta = op_delta >> 4
+          op_length = op_delta_length & 15
           
-          if (op_length == 13):
-            op_length = receivedFrame[0]
-            op_length = ord(op_length) + 13
-            option = receivedFrame[0:op_length]
+          if (op_delta < 13):
+            op_descriptor = op_delta + op_delta_old
+            option, receivedFrame = self.check_length(receivedFrame, op_length)
+
+          elif (op_delta == 13):
+            op_delta = receivedFrame[0]
+            op_descriptor = op_delta + 13 + op_delta_old
             receivedFrame = receivedFrame[1:]
-          elif (op_length == 14):
-            op_length = receivedFrame[0:2]
-            print(int.from_bytes(op_length, byteorder='big'))
-            op_length = int.from_bytes(op_length, byteorder='big') + 269
-            option = receivedFrame[0:op_length]
+            option, receivedFrame = self.check_length(receivedFrame, op_length)
+
+          elif (op_delta == 14):
+            op_delta = receivedFrame[0:2]
+            op_descriptor = op_delta + 269 + op_delta_old
             receivedFrame = receivedFrame[2:]
-          elif (op_length == 15):
-            return ('ERRO')
-          else:
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[op_length:]
+            option, receivedFrame = self.check_length(receivedFrame, op_length)
 
-        elif (op_delta == 14):
-          op_delta = receivedFrame[0:2]
-          receivedFrame = receivedFrame[2:]
-          
-          if (op_length == 13):
-            op_length = receivedFrame[0]
-            op_length = ord(op_length) + 13
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[1:]
-          elif (op_length == 14):
-            op_length = receivedFrame[0:2]
-            print(int.from_bytes(op_length, byteorder='big'))
-            op_length = int.from_bytes(op_length, byteorder='big') + 269
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[2:]
-          elif (op_length == 15):
-            return ('ERRO')
-          else:
-            option = receivedFrame[0:op_length]
-            receivedFrame = receivedFrame[op_length:]
+          elif (op_delta == 15):
+            if (op_length != 15):
+              return ('ERRO')
+            else:
+              payload_rec = receivedFrame
+              break
+          op_delta_old = op_delta
+          dic = dict()
+          dic['descriptor'] = op_descriptor
+          dic['option'] = option
+          self.list['options_value'].append(dic)
 
-        elif (op_delta == 15):
-          if (op_length != 15):
-            return ('ERRO')
-          else:
-            payload_rec = receivedFrame
-            break
-
-      if (code_rec == 65):
-        return '2.01 - Created ' + payload_rec.decode("utf-8")
-      elif (code_rec == 66):
-        return '2.02 - Deleted ' + payload_rec.decode("utf-8")
-      elif (code_rec == 67):
-        return '2.03 - Valid ' + payload_rec.decode("utf-8")
-      elif (code_rec == 68):
-        return '2.04 - Changed ' + payload_rec.decode("utf-8")
-      elif (code_rec == 69):
-        return '2.05 - Content ' + payload_rec.decode("utf-8")
-
+        if (code_rec == 65):
+          return '2.01 - Created ' + payload_rec.decode("utf-8")
+        elif (code_rec == 66):
+          return '2.02 - Deleted ' + payload_rec.decode("utf-8")
+        elif (code_rec == 67):
+          return '2.03 - Valid ' + payload_rec.decode("utf-8")
+        elif (code_rec == 68):
+          return '2.04 - Changed ' + payload_rec.decode("utf-8")
+        elif (code_rec == 69):
+          return '2.05 - Content ' + payload_rec.decode("utf-8")
+      return 'Erro - Token não compatível'
     return 'Erro - ID de Mensagem não compatível'
+
+  def check_length(self, receivedFrame, op_length):
+    if (op_length == 13):
+      op_length = receivedFrame[0]
+      op_length = ord(op_length) + 13
+      option = receivedFrame[0:op_length]
+      receivedFrame = receivedFrame[1:]
+    elif (op_length == 14):
+      op_length = receivedFrame[0:2]
+      op_length = int.from_bytes(op_length, byteorder='big') + 269
+      option = receivedFrame[0:op_length]
+      receivedFrame = receivedFrame[2:]
+    elif (op_length == 15):
+      return ('ERRO')
+    else:
+      option = receivedFrame[0:op_length]
+      receivedFrame = receivedFrame[op_length:]
+    self.auxiliar = option
+    return option, receivedFrame
 
 
   def error(self, code_rec):
