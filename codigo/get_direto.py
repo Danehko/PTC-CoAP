@@ -22,7 +22,7 @@ print('Execução do GET\n')
 if (len(argumentos) == 2):
     answerGET, options = c.GET(argumentos[1])
 else:
-    answerGET, options = c.GET(argumentos[1], str(argumentos[2]))
+    answerGET, options = c.GET(argumentos[1], token=argumentos[2])
 
 print('- Reposta do GET:')
 print(answerGET)

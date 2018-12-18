@@ -13,6 +13,7 @@ if (len(argumentos) < 2):
   print('   - A porta: 5683')
   print('   - O token: 123')
   print('A porta e o token são opcionais.\n')
+  print('O token só funciona se tiver a porta nesse método.\n')
   sys.exit(1)
 
 print('Execução do GET\n')

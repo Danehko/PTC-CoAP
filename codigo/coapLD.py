@@ -110,7 +110,6 @@ class coap:
     self.port = int(5683)
     # socket UDP
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.auxiliar = b''
     self.list = dict()
 	
 
@@ -121,6 +120,7 @@ class coap:
     self.method = 'direct'
     self.token = token.encode()
     self.tkl = len(token).to_bytes(1, byteorder='big')
+    
     if len(token) > 8:
       return 'ERRO'
     
@@ -128,7 +128,7 @@ class coap:
       self.path = server_adress
       self.port = port
       self.method = 'not_direct'
-      
+
     self.generateFrame(resource)
     self.sock.sendto(self.frame, (self.path, self.port))
     data, addr = self.sock.recvfrom(1024)
@@ -346,7 +346,6 @@ class coap:
     else:
       option = receivedFrame[0:op_length]
       receivedFrame = receivedFrame[op_length:]
-    self.auxiliar = option
     return option, receivedFrame
 
 

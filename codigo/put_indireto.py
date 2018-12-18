@@ -8,11 +8,10 @@ argumentos = sys.argv[0:]
 
 if (len(argumentos) < 2):
   print('Para executar esse teste é preciso digitar: ')
-  print('   - O recurso: .well-known/core')
+  print('   - O recurso: other/block')
   print('   - O IP: 127.0.0.1')
   print('   - A porta: 5683')
-  print('   - O token: 123')
-  print('A porta e o token são opcionais.')
+  print('A porta é opcional.')
   sys.exit(1)
 
 print('Execução do PUT')
